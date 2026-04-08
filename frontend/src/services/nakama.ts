@@ -51,18 +51,34 @@ export const initNakama = async (username?: string) => {
 };
 
 export const createMatch = async (mode: "classic" | "timed") => {
-    const response = await client.rpc(session, "create_match", { mode });
-    if (response.payload) {
-        const { matchId } = JSON.parse(response.payload as any);
-        await socket.joinMatch(matchId);
-        useGameStore.getState().setMatchId(matchId);
-        return matchId;
+    console.info(`[Nakama] Creating ${mode} match...`);
+    try {
+        const response = await client.rpc(session, "create_match", { mode });
+        console.info("[Nakama] Create match RPC response:", response);
+        
+        if (response.payload) {
+            const { matchId } = JSON.parse(response.payload as any);
+            console.info("[Nakama] Joining created match:", matchId);
+            await socket.joinMatch(matchId);
+            useGameStore.getState().setMatchId(matchId);
+            return matchId;
+        }
+    } catch (err) {
+        console.error("[Nakama] Create match failed:", err);
+        throw err;
     }
 };
 
 export const joinMatch = async (matchId: string) => {
-    await socket.joinMatch(matchId);
-    useGameStore.getState().setMatchId(matchId);
+    console.info("[Nakama] Joining match by ID:", matchId);
+    try {
+        await socket.joinMatch(matchId);
+        console.info("[Nakama] Successfully joined match:", matchId);
+        useGameStore.getState().setMatchId(matchId);
+    } catch (err) {
+        console.error("[Nakama] Join match failed:", err);
+        throw err;
+    }
 };
 
 export const leaveMatch = async (matchId: string) => {
@@ -71,29 +87,27 @@ export const leaveMatch = async (matchId: string) => {
 };
 
 export const findMatch = async (mode: "classic" | "timed") => {
-    // A mandatory match for the mode property. 
-    // Strings in queries should be quoted to avoid issues with special characters or term splitting.
-    const query = `+properties.mode:"${mode}"`;
-
-    // Explicitly pass stringProperties and numericProperties.
-    // Nakama matchmaker requires properties to match the query from both sides.
-    const stringProperties = { mode: mode };
-    //numeric properties are not used in this game
-    const numericProperties = {};
-
-    await socket.addMatchmaker(query, 2, 2, stringProperties, numericProperties);
-
-    return new Promise<string>((resolve, reject) => {
-        socket.onmatchmakermatched = async (matched) => {
-            try {
-                const match = await socket.joinMatch(matched.match_id);
-                useGameStore.getState().setMatchId(match.match_id);
-                resolve(match.match_id);
-            } catch (err) {
-                reject(err);
-            }
-        };
-    });
+    console.info(`[Nakama] Calling auto_match RPC for ${mode} mode...`);
+    try {
+        const response = await client.rpc(session, "auto_match", { mode });
+        console.info("[Nakama] auto_match RPC response:", response);
+        
+        if (response.payload) {
+            const { matchId } = JSON.parse(response.payload as any);
+            console.info("[Nakama] Auto Match found/created match ID:", matchId);
+            
+            // Join the found or created match
+            await socket.joinMatch(matchId);
+            console.info("[Nakama] Successfully joined match:", matchId);
+            useGameStore.getState().setMatchId(matchId);
+            return matchId;
+        } else {
+            throw new Error("No payload from auto_match RPC");
+        }
+    } catch (err) {
+        console.error("[Nakama] findMatch error:", err);
+        throw err;
+    }
 };
 
 export const listMatches = async (mode?: "classic" | "timed") => {

@@ -2,7 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { findMatch, listMatches, joinMatch, createMatch } from '../services/nakama';
 import type { GameMode } from '../store/gameStore';
 
-export default function Lobby() {
+interface LobbyProps {
+  onChangeName?: () => void;
+}
+
+export default function Lobby({ onChangeName }: LobbyProps) {
   const [finding, setFinding] = useState(false);
   const [mode, setMode] = useState<GameMode>("classic");
   const [elapsed, setElapsed] = useState(0);
@@ -48,6 +52,7 @@ export default function Lobby() {
     setFinding(true);
     try {
       await findMatch(mode);
+      setFinding(false);
     } catch {
       alert("Matchmaking failed or was cancelled.");
       setFinding(false);
@@ -81,11 +86,9 @@ export default function Lobby() {
   const handleCreateMatch = async () => {
     try {
       const matchId = await createMatch(mode);
-      if (matchId) {
-        // Match created & joined — state will update from WebSocket
-      }
-    } catch {
-      alert("Failed to create match.");
+      if (!matchId) throw new Error("Match creation failed");
+    } catch (err: any) {
+      alert(`Failed to create match: ${err.message || 'Unknown error'}`);
     }
   };
 
@@ -115,9 +118,19 @@ export default function Lobby() {
   return (
     <div className="d-flex flex-column h-100 p-4 animate-fade-in" style={{gap: '1rem'}}>
       {/* Header */}
-      <div className="text-center pt-2 pb-1">
+      <div className="text-center pt-2 pb-1 position-relative">
         <h4 className="fw-bold mb-1">Tic-Tac-Toe</h4>
         <p className="text-muted small mb-0">Multiplayer · Server-Authoritative</p>
+        
+        {onChangeName && (
+          <button 
+            onClick={onChangeName}
+            className="btn-link position-absolute" 
+            style={{top: '10px', right: '0px', fontSize: '11px', color: 'var(--accent-green)', opacity: 0.8}}
+          >
+            ✎ Change Name
+          </button>
+        )}
       </div>
 
       {/* Mode Selector */}

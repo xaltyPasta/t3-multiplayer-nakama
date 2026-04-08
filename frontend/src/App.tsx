@@ -41,6 +41,11 @@ function App() {
     }
   };
 
+  const handleResetNickname = () => {
+    localStorage.removeItem("nickname");
+    setNeedsNickname(true);
+  };
+
   if (loading) {
     return (
       <div className="App d-flex align-items-center justify-content-center">
@@ -87,7 +92,7 @@ function App() {
         </div>
       )}
 
-      {!needsNickname && !gameState && <Lobby />}
+      {!needsNickname && !gameState && <Lobby onChangeName={handleResetNickname} />}
       {gameState?.status === 'FINISHED' && <Result />}
       {gameState?.status !== 'FINISHED' && gameState && <Game />}
     </div>
