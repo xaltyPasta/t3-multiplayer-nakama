@@ -88,14 +88,15 @@ function rpcAutoMatch(context: nkruntime.Context, logger: nkruntime.Logger, nk: 
         }
     }
 
-    // Step 1: Try finding open matches
+    // Use query (6th param) for reliable JSON label searching
+    const query = `+label.mode:${mode} +label.open:1`;
     const matches = nk.matchList(
-        10,                     // limit
-        true,                   // authoritative
-        `label.mode:${mode}`,   // filter
-        0,                      // min size
-        1,                      // max size (only matches with 1 player)
-        ""                      // query
+        10,             // limit
+        true,           // authoritative
+        "",             // label (ignore substring filter)
+        0,              // min size
+        1,              // max size
+        query           // query (Bleve search)
     );
 
     if (matches.length > 0) {
@@ -120,16 +121,20 @@ function rpcListMatches(context: nkruntime.Context, logger: nkruntime.Logger, nk
     var isAuthoritative = true;
     var minSize = 0;
     var maxSize = 1;
-    var modeFilter = "";
+    var query = "";
     if (payload) {
         try {
             var data = JSON.parse(payload);
             if (data.mode) {
-                modeFilter = "label.mode:" + data.mode;
+                query = "+label.mode:" + data.mode;
             }
         } catch (e) { }
     }
-    var matches = nk.matchList(limit, isAuthoritative, modeFilter, minSize, maxSize, "");
+    // Only show open matches (1 player)
+    if (query) query += " ";
+    query += "+label.open:1";
+
+    var matches = nk.matchList(limit, isAuthoritative, "", minSize, maxSize, query);
     return JSON.stringify({ matches: matches });
 }
 

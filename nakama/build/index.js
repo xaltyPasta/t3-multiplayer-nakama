@@ -59,7 +59,8 @@ function rpcAutoMatch(context, logger, nk, payload) {
             logger.error("Invalid payload in auto_match");
         }
     }
-    var matches = nk.matchList(10, true, "label.mode:".concat(mode), 0, 1, "");
+    var query = "+label.mode:".concat(mode, " +label.open:1");
+    var matches = nk.matchList(10, true, "", 0, 1, query);
     if (matches.length > 0) {
         return JSON.stringify({
             matchId: matches[0].matchId,
@@ -77,17 +78,20 @@ function rpcListMatches(context, logger, nk, payload) {
     var isAuthoritative = true;
     var minSize = 0;
     var maxSize = 1;
-    var modeFilter = "";
+    var query = "";
     if (payload) {
         try {
             var data = JSON.parse(payload);
             if (data.mode) {
-                modeFilter = "label.mode:" + data.mode;
+                query = "+label.mode:" + data.mode;
             }
         }
         catch (e) { }
     }
-    var matches = nk.matchList(limit, isAuthoritative, modeFilter, minSize, maxSize, "");
+    if (query)
+        query += " ";
+    query += "+label.open:1";
+    var matches = nk.matchList(limit, isAuthoritative, "", minSize, maxSize, query);
     return JSON.stringify({ matches: matches });
 }
 function updateLeaderboard(nk, logger, userId, username, isWinner, isDraw) {

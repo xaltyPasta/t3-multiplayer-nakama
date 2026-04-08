@@ -71,8 +71,16 @@ export const leaveMatch = async (matchId: string) => {
 };
 
 export const findMatch = async (mode: "classic" | "timed") => {
-    const query = `properties.mode:${mode}`;
-    await socket.addMatchmaker(query, 2, 2, { mode: mode });
+    // A mandatory match for the mode property. 
+    // Strings in queries should be quoted to avoid issues with special characters or term splitting.
+    const query = `+properties.mode:"${mode}"`;
+    
+    // Explicitly pass stringProperties and numericProperties.
+    // Nakama matchmaker requires properties to match the query from both sides.
+    const stringProperties = { mode: mode };
+    const numericProperties = {};
+
+    await socket.addMatchmaker(query, 2, 2, stringProperties, numericProperties);
     
     return new Promise<string>((resolve, reject) => {
         socket.onmatchmakermatched = async (matched) => {
