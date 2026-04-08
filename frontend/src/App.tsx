@@ -50,7 +50,7 @@ function App() {
   }
 
   return (
-    <div className={`App ${gameState && gameState.status !== 'FINISHED' ? 'bg-teal-theme' : 'bg-dark-theme'}`}>
+    <div className={`App ${!gameState ? '' : gameState.status === 'FINISHED' ? 'bg-dark-theme' : 'bg-teal-theme'}`}>
       
       {/* Modal for Username Overlay */}
       {needsNickname && (
@@ -66,11 +66,11 @@ function App() {
                 autoFocus
                 maxLength={12}
                 placeholder="Nickname"
-                className="input-minimal w-100 mb-3"
+                className="input-dark w-100 mb-3"
                 value={nickname}
                 onChange={e => setNickname(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleNicknameSubmit()}
-                style={{background: '#1f2937', textAlign: 'left', padding: '12px 16px'}}
+                style={{textAlign: 'left', padding: '12px 16px'}}
               />
             </div>
             <div className="p-3 d-flex justify-content-end border-top" style={{borderColor: 'rgba(255,255,255,0.05)'}}>
