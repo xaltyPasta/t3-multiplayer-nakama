@@ -89,7 +89,7 @@ function rpcAutoMatch(context: nkruntime.Context, logger: nkruntime.Logger, nk: 
     }
 
     // Use query (6th param) for reliable JSON label searching
-    const query = `+label.mode:${mode} +label.open:1`;
+    const query = `+label.mode:"${mode}" +label.open:1`;
     const matches = nk.matchList(
         10,             // limit
         true,           // authoritative
@@ -126,7 +126,7 @@ function rpcListMatches(context: nkruntime.Context, logger: nkruntime.Logger, nk
         try {
             var data = JSON.parse(payload);
             if (data.mode) {
-                query = "+label.mode:" + data.mode;
+                query = `+label.mode:"${data.mode}"`;
             }
         } catch (e) { }
     }
