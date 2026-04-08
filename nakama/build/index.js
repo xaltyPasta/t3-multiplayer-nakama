@@ -103,15 +103,22 @@ function updateLeaderboard(nk, logger, userId, username, isWinner, isDraw) {
     }
     var objIds = [{ collection: "stats", key: "profile", userId: userId }];
     var objects = nk.storageRead(objIds);
-    var stats = { wins: 0, losses: 0, streak: 0 };
+    var stats = { wins: 0, losses: 0, draws: 0, streak: 0 };
     if (objects && objects.length > 0) {
-        stats = objects[0].value;
+        var loaded = objects[0].value;
+        stats.wins = loaded.wins || 0;
+        stats.losses = loaded.losses || 0;
+        stats.draws = loaded.draws || 0;
+        stats.streak = loaded.streak || 0;
     }
     if (isWinner) {
         stats.wins++;
         stats.streak++;
     }
-    else if (!isDraw) {
+    else if (isDraw) {
+        stats.draws++;
+    }
+    else {
         stats.losses++;
         stats.streak = 0;
     }
