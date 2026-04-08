@@ -12,6 +12,21 @@ const OPCODES = {
     ERROR: 3
 };
 
+/**
+ * Safely parse RPC payloads. 
+ * nakama-js may automatically parse JSON payloads into objects depending on server headers.
+ */
+const parsePayload = (payload: any): any => {
+    if (typeof payload === 'string') {
+        try {
+            return JSON.parse(payload);
+        } catch (e) {
+            return payload;
+        }
+    }
+    return payload;
+};
+
 export const initNakama = async (username?: string) => {
     const host = import.meta.env.VITE_NAKAMA_HOST || "127.0.0.1";
     const port = import.meta.env.VITE_NAKAMA_PORT || "7350";
@@ -57,7 +72,8 @@ export const createMatch = async (mode: "classic" | "timed") => {
         console.info("[Nakama] Create match RPC response:", response);
         
         if (response.payload) {
-            const { matchId } = JSON.parse(response.payload as any);
+            const data = parsePayload(response.payload);
+            const { matchId } = data;
             console.info("[Nakama] Joining created match:", matchId);
             await socket.joinMatch(matchId);
             useGameStore.getState().setMatchId(matchId);
@@ -93,7 +109,8 @@ export const findMatch = async (mode: "classic" | "timed") => {
         console.info("[Nakama] auto_match RPC response:", response);
         
         if (response.payload) {
-            const { matchId } = JSON.parse(response.payload as any);
+            const data = parsePayload(response.payload);
+            const { matchId } = data;
             console.info("[Nakama] Auto Match found/created match ID:", matchId);
             
             // Join the found or created match
@@ -114,7 +131,8 @@ export const listMatches = async (mode?: "classic" | "timed") => {
     const payload = mode ? { mode } : {};
     const res = await client.rpc(session, "list_matches", payload);
     if (res.payload) {
-        return JSON.parse(res.payload as any).matches || [];
+        const data = parsePayload(res.payload);
+        return data.matches || [];
     }
     return [];
 };
@@ -128,7 +146,7 @@ export const sendMove = async (matchId: string, position: number) => {
 export const getLeaderboard = async () => {
     const res = await client.rpc(session, "get_leaderboard", {});
     if (res.payload) {
-        return JSON.parse(res.payload as any);
+        return parsePayload(res.payload);
     }
     return [];
 };
