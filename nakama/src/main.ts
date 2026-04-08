@@ -145,11 +145,8 @@ function updateLeaderboard(nk: nkruntime.Nakama, logger: nkruntime.Logger, userI
     var LEADERBOARD_OPERATOR = nkruntime.Operator.INCREMENT;
     var LEADERBOARD_RESET = "0 0 * * 1";
 
-    try {
-        nk.leaderboardCreate(LEADERBOARD_ID, LEADERBOARD_AUTHORITATIVE, LEADERBOARD_SORT_ORDER, LEADERBOARD_OPERATOR, LEADERBOARD_RESET);
-    } catch (e) {
-        // Already exists
-    }
+    var LEADERBOARD_ID = "ttt_global";
+    // Leaderboard creation moved to InitModule
 
     var objIds: nkruntime.StorageReadRequest[] = [{ collection: "stats", key: "profile", userId: userId }];
     var objects = nk.storageRead(objIds);
@@ -188,8 +185,13 @@ function updateLeaderboard(nk: nkruntime.Nakama, logger: nkruntime.Logger, userI
 
 function rpcGetLeaderboard(context: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
     var limit = 10;
-    var records = nk.leaderboardRecordsList("ttt_global", [], limit, undefined);
-    return JSON.stringify(records);
+    try {
+        var records = nk.leaderboardRecordsList("ttt_global", [], limit, undefined);
+        return JSON.stringify(records);
+    } catch (e) {
+        // If leaderboard doesn't exist yet, return an empty list instead of 500
+        return JSON.stringify({ records: [], owner_records: [] });
+    }
 }
 
 // MATCH HANDLERS
@@ -442,6 +444,14 @@ function handleMatchEnd(nk: nkruntime.Nakama, logger: nkruntime.Logger, s: GameS
 
 function InitModule(ctx: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, initializer: nkruntime.Initializer) {
     logger.info("Initializing Tic-Tac-Toe Nakama Server...");
+    
+    // Create Leaderboard
+    try {
+        nk.leaderboardCreate("ttt_global", true, nkruntime.SortOrder.DESCENDING, nkruntime.Operator.INCREMENT, "0 0 * * 1");
+        logger.info("Successfully created/confirmed 'ttt_global' leaderboard.");
+    } catch (e) {
+        logger.error("Failed to create leaderboard: " + e);
+    }
 
     // Register Match Handler
     initializer.registerMatch("tic_tac_toe", {

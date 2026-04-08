@@ -59,7 +59,7 @@ function rpcAutoMatch(context, logger, nk, payload) {
             logger.error("Invalid payload in auto_match");
         }
     }
-    var query = "+label.mode:".concat(mode, " +label.open:1");
+    var query = "+label.mode:\"".concat(mode, "\" +label.open:1");
     var matches = nk.matchList(10, true, "", 0, 1, query);
     if (matches.length > 0) {
         return JSON.stringify({
@@ -83,7 +83,7 @@ function rpcListMatches(context, logger, nk, payload) {
         try {
             var data = JSON.parse(payload);
             if (data.mode) {
-                query = "+label.mode:" + data.mode;
+                query = "+label.mode:\"".concat(data.mode, "\"");
             }
         }
         catch (e) { }
@@ -100,11 +100,7 @@ function updateLeaderboard(nk, logger, userId, username, isWinner, isDraw) {
     var LEADERBOARD_SORT_ORDER = nkruntime.SortOrder.DESCENDING;
     var LEADERBOARD_OPERATOR = nkruntime.Operator.INCREMENT;
     var LEADERBOARD_RESET = "0 0 * * 1";
-    try {
-        nk.leaderboardCreate(LEADERBOARD_ID, LEADERBOARD_AUTHORITATIVE, LEADERBOARD_SORT_ORDER, LEADERBOARD_OPERATOR, LEADERBOARD_RESET);
-    }
-    catch (e) {
-    }
+    var LEADERBOARD_ID = "ttt_global";
     var objIds = [{ collection: "stats", key: "profile", userId: userId }];
     var objects = nk.storageRead(objIds);
     var stats = { wins: 0, losses: 0, draws: 0, streak: 0 };
@@ -140,8 +136,13 @@ function updateLeaderboard(nk, logger, userId, username, isWinner, isDraw) {
 }
 function rpcGetLeaderboard(context, logger, nk, payload) {
     var limit = 10;
-    var records = nk.leaderboardRecordsList("ttt_global", [], limit, undefined);
-    return JSON.stringify(records);
+    try {
+        var records = nk.leaderboardRecordsList("ttt_global", [], limit, undefined);
+        return JSON.stringify(records);
+    }
+    catch (e) {
+        return JSON.stringify({ records: [], owner_records: [] });
+    }
 }
 function matchInit(ctx, logger, nk, params) {
     logger.debug("Match created with params: " + JSON.stringify(params));
@@ -369,6 +370,13 @@ function handleMatchEnd(nk, logger, s) {
 }
 function InitModule(ctx, logger, nk, initializer) {
     logger.info("Initializing Tic-Tac-Toe Nakama Server...");
+    try {
+        nk.leaderboardCreate("ttt_global", true, nkruntime.SortOrder.DESCENDING, nkruntime.Operator.INCREMENT, "0 0 * * 1");
+        logger.info("Successfully created/confirmed 'ttt_global' leaderboard.");
+    }
+    catch (e) {
+        logger.error("Failed to create leaderboard: " + e);
+    }
     initializer.registerMatch("tic_tac_toe", {
         matchInit: matchInit,
         matchJoinAttempt: matchJoinAttempt,
