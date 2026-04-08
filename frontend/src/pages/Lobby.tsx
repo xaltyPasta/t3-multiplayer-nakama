@@ -14,7 +14,9 @@ export default function Lobby({ onChangeName }: LobbyProps) {
   const [matches, setMatches] = useState<any[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [joiningId, setJoiningId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"find" | "browse" | "create">("find");
+  const [activeTab, setActiveTab] = useState<"find" | "browse" | "create" | "leaderboard">("find");
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [loadingBoard, setLoadingBoard] = useState(false);
 
   // Refresh match list when on browse tab
   const refreshMatches = useCallback(async () => {
@@ -34,8 +36,24 @@ export default function Lobby({ onChangeName }: LobbyProps) {
       refreshMatches();
       const interval = setInterval(refreshMatches, 5000);
       return () => clearInterval(interval);
+    } else if (activeTab === "leaderboard") {
+      fetchLeaderboard();
     }
   }, [activeTab, refreshMatches]);
+
+  const fetchLeaderboard = async () => {
+    setLoadingBoard(true);
+    try {
+      const { getLeaderboard } = await import('../services/nakama');
+      const res = await getLeaderboard();
+      const records = res?.owner_records || res?.records || [];
+      setLeaderboard(records);
+    } catch {
+      setLeaderboard([]);
+    } finally {
+      setLoadingBoard(false);
+    }
+  };
 
   // Elapsed timer for matchmaking
   useEffect(() => {
@@ -157,6 +175,9 @@ export default function Lobby({ onChangeName }: LobbyProps) {
         <button className={`tab ${activeTab === 'create' ? 'active' : ''}`} onClick={() => setActiveTab('create')}>
           Create
         </button>
+        <button className={`tab ${activeTab === 'leaderboard' ? 'active' : ''}`} onClick={() => setActiveTab('leaderboard')}>
+          🏆 Rank
+        </button>
       </div>
 
       {/* Tab Content */}
@@ -274,6 +295,61 @@ export default function Lobby({ onChangeName }: LobbyProps) {
               Once created, your match ID will be visible in the game screen.<br/>
               Share it with your opponent so they can join via "Browse → Join by ID".
             </p>
+          </div>
+        )}
+
+        {/* --- Leaderboard Tab --- */}
+        {activeTab === "leaderboard" && (
+          <div className="d-flex flex-column flex-grow-1 animate-fade-in">
+            <div className="d-flex align-items-center justify-content-between mb-2">
+              <span className="fw-semibold small text-muted">Global Rankings</span>
+              <button className="btn-outline px-2 py-1" style={{fontSize: '11px'}} onClick={fetchLeaderboard} disabled={loadingBoard}>
+                {loadingBoard ? "..." : "↻ Refresh"}
+              </button>
+            </div>
+
+            <div className="scroll-section flex-grow-1">
+              {loadingBoard && leaderboard.length === 0 ? (
+                <div className="empty-state">
+                  <div className="spinner mx-auto mb-2" style={{width: 20, height: 20, borderWidth: 2}}></div>
+                  <p className="small mb-0">Loading ranks...</p>
+                </div>
+              ) : leaderboard.length === 0 ? (
+                <div className="empty-state">
+                  <p className="small mb-0">No rankings yet. Start playing!</p>
+                </div>
+              ) : (
+                <table className="leaderboard-table w-100">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Player</th>
+                      <th>W/L/D</th>
+                      <th>Score</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboard.map((record, idx) => {
+                      const stats = record.metadata || {};
+                      return (
+                        <tr key={idx}>
+                          <td style={{color: 'rgba(255,255,255,0.4)', width: '30px'}}>{idx + 1}</td>
+                          <td className="fw-semibold">{record.username || 'Anonymous'}</td>
+                          <td>
+                            <span className="win-color">{stats.wins || 0}</span>
+                            <span style={{color: 'rgba(255,255,255,0.2)'}}>/</span>
+                            <span className="loss-color">{stats.losses || 0}</span>
+                            <span style={{color: 'rgba(255,255,255,0.2)'}}>/</span>
+                            <span className="draw-color">{stats.draws || 0}</span>
+                          </td>
+                          <td className="fw-semibold text-teal">{record.score}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
           </div>
         )}
 
