@@ -19,10 +19,10 @@ export const initNakama = async (username?: string) => {
     const useSSL = import.meta.env.VITE_NAKAMA_SSL === "true";
 
     client = new Client(serverKey, host, port, useSSL);
-    
+
     const deviceId = localStorage.getItem("deviceId") || crypto.randomUUID();
     localStorage.setItem("deviceId", deviceId);
-    
+
     session = await client.authenticateDevice(deviceId, true);
     socket = client.createSocket(useSSL, false);
     await socket.connect(session, true);
@@ -46,7 +46,7 @@ export const initNakama = async (username?: string) => {
             console.error("Server Error: ", err);
         }
     };
-    
+
     return session;
 };
 
@@ -74,14 +74,15 @@ export const findMatch = async (mode: "classic" | "timed") => {
     // A mandatory match for the mode property. 
     // Strings in queries should be quoted to avoid issues with special characters or term splitting.
     const query = `+properties.mode:"${mode}"`;
-    
+
     // Explicitly pass stringProperties and numericProperties.
     // Nakama matchmaker requires properties to match the query from both sides.
     const stringProperties = { mode: mode };
+    //numeric properties are not used in this game
     const numericProperties = {};
 
     await socket.addMatchmaker(query, 2, 2, stringProperties, numericProperties);
-    
+
     return new Promise<string>((resolve, reject) => {
         socket.onmatchmakermatched = async (matched) => {
             try {
