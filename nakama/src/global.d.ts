@@ -15,16 +15,17 @@ declare namespace nkruntime {
     type MatchSignalFunction = any;
     type StorageReadRequest = any;
     type StorageWriteRequest = any;
-    
-    enum SortOrder {
-        ASCENDING = "asc",
-        DESCENDING = "desc"
+
+    // Use const enum so values are INLINED at compile time (no runtime reference to nkruntime)
+    const enum SortOrder {
+        ASCENDING = 0,
+        DESCENDING = 1
     }
 
-    enum Operator {
-        BEST = "best",
-        SET = "set",
-        INCREMENT = "increment",
-        DECREMENT = "decrement"
+    const enum Operator {
+        BEST = 0,
+        SET = 1,
+        INCREMENT = 2,
+        DECREMENT = 3
     }
 }

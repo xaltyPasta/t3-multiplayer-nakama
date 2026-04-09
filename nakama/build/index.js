@@ -96,11 +96,6 @@ function rpcListMatches(context, logger, nk, payload) {
 }
 function updateLeaderboard(nk, logger, userId, username, isWinner, isDraw) {
     var LEADERBOARD_ID = "ttt_global";
-    var LEADERBOARD_AUTHORITATIVE = true;
-    var LEADERBOARD_SORT_ORDER = nkruntime.SortOrder.DESCENDING;
-    var LEADERBOARD_OPERATOR = nkruntime.Operator.INCREMENT;
-    var LEADERBOARD_RESET = "0 0 * * 1";
-    var LEADERBOARD_ID = "ttt_global";
     var objIds = [{ collection: "stats", key: "profile", userId: userId }];
     var objects = nk.storageRead(objIds);
     var stats = { wins: 0, losses: 0, draws: 0, streak: 0 };
@@ -137,10 +132,12 @@ function updateLeaderboard(nk, logger, userId, username, isWinner, isDraw) {
 function rpcGetLeaderboard(context, logger, nk, payload) {
     var limit = 10;
     try {
-        var records = nk.leaderboardRecordsList("ttt_global", [], limit, undefined);
+        var records = nk.leaderboardRecordsList("ttt_global", [context.userId], limit, undefined);
+        logger.debug("Leaderboard records fetched successfully for user: " + context.userId);
         return JSON.stringify(records);
     }
     catch (e) {
+        logger.error("Error fetching leaderboard: " + e);
         return JSON.stringify({ records: [], owner_records: [] });
     }
 }
@@ -371,7 +368,7 @@ function handleMatchEnd(nk, logger, s) {
 function InitModule(ctx, logger, nk, initializer) {
     logger.info("Initializing Tic-Tac-Toe Nakama Server...");
     try {
-        nk.leaderboardCreate("ttt_global", true, nkruntime.SortOrder.DESCENDING, nkruntime.Operator.INCREMENT, "0 0 * * 1");
+        nk.leaderboardCreate("ttt_global", true, 1, 2, "0 0 * * 1");
         logger.info("Successfully created/confirmed 'ttt_global' leaderboard.");
     }
     catch (e) {

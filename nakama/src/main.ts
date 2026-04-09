@@ -140,13 +140,6 @@ function rpcListMatches(context: nkruntime.Context, logger: nkruntime.Logger, nk
 
 function updateLeaderboard(nk: nkruntime.Nakama, logger: nkruntime.Logger, userId: string, username: string, isWinner: boolean, isDraw: boolean) {
     var LEADERBOARD_ID = "ttt_global";
-    var LEADERBOARD_AUTHORITATIVE = true;
-    var LEADERBOARD_SORT_ORDER = nkruntime.SortOrder.DESCENDING;
-    var LEADERBOARD_OPERATOR = nkruntime.Operator.INCREMENT;
-    var LEADERBOARD_RESET = "0 0 * * 1";
-
-    var LEADERBOARD_ID = "ttt_global";
-    // Leaderboard creation moved to InitModule
 
     var objIds: nkruntime.StorageReadRequest[] = [{ collection: "stats", key: "profile", userId: userId }];
     var objects = nk.storageRead(objIds);
@@ -186,10 +179,12 @@ function updateLeaderboard(nk: nkruntime.Nakama, logger: nkruntime.Logger, userI
 function rpcGetLeaderboard(context: nkruntime.Context, logger: nkruntime.Logger, nk: nkruntime.Nakama, payload: string): string {
     var limit = 10;
     try {
-        var records = nk.leaderboardRecordsList("ttt_global", [], limit, undefined);
+        // Fetch both global records (records) and the caller's record (owner_records)
+        var records = nk.leaderboardRecordsList("ttt_global", [context.userId], limit, undefined);
+        logger.debug("Leaderboard records fetched successfully for user: " + context.userId);
         return JSON.stringify(records);
     } catch (e) {
-        // If leaderboard doesn't exist yet, return an empty list instead of 500
+        logger.error("Error fetching leaderboard: " + e);
         return JSON.stringify({ records: [], owner_records: [] });
     }
 }
